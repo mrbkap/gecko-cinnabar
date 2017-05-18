@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-let checkState = async function(browser) {
+let checkState = async function() {
   // Go back and then forward, and make sure that the state objects received
   // from the popState event are as we expect them to be.
   //
@@ -10,70 +10,51 @@ let checkState = async function(browser) {
   // sure it's still there after we go forward -- this is to test that the two
   // history entries correspond to the same document.
 
-  let deferred = {};
-  deferred.promise = new Promise(resolve => deferred.resolve = resolve);
-
-  let popStateCount = 0;
-
-  browser.addEventListener("popstate", function(aEvent) {
-    if (popStateCount == 0) {
-      popStateCount++;
-
-      ok(aEvent.state, "Event should have a state property.");
-
-      ContentTask.spawn(browser, null, function() {
-        is(content.testState, "foo",
-           "testState after going back");
-        is(JSON.stringify(content.history.state), JSON.stringify({obj1: 1}),
-           "first popstate object.");
-
-        // Add a node with id "new-elem" to the document.
-        let doc = content.document;
-        ok(!doc.getElementById("new-elem"),
-           "doc shouldn't contain new-elem before we add it.");
-        let elem = doc.createElement("div");
-        elem.id = "new-elem";
-        doc.body.appendChild(elem);
-      }).then(() => {
-        browser.goForward();
-      });
-    } else if (popStateCount == 1) {
-      popStateCount++;
-      // When content fires a PopStateEvent and we observe it from a chrome event
-      // listener (as we do here, and, thankfully, nowhere else in the tree), the
-      // state object will be a cross-compartment wrapper to an object that was
-      // deserialized in the content scope. And in this case, since RegExps are
-      // not currently Xrayable (see bug 1014991), trying to pull |obj3| (a RegExp)
-      // off of an Xrayed Object won't work. So we need to waive.
-      ContentTask.spawn(browser, aEvent.state, function(state) {
-        Assert.equal(Cu.waiveXrays(state).obj3.toString(),
-          "/^a$/", "second popstate object.");
-
-        // Make sure that the new-elem node is present in the document.  If it's
-        // not, then this history entry has a different doc identifier than the
-        // previous entry, which is bad.
-        let doc = content.document;
-        let newElem = doc.getElementById("new-elem");
-        ok(newElem, "doc should contain new-elem.");
-        newElem.remove();
-        ok(!doc.getElementById("new-elem"), "new-elem should be removed.");
-      }).then(() => {
-        browser.removeEventListener("popstate", arguments.callee, true);
-        deferred.resolve();
-      });
-    }
-  });
-
   // Set some state in the page's window.  When we go back(), the page should
   // be retrieved from bfcache, and this state should still be there.
-  await ContentTask.spawn(browser, null, function() {
-    content.testState = "foo";
-  });
+  content.testState = "foo";
 
-  // Now go back.  This should trigger the popstate event handler above.
-  browser.goBack();
+  // Now go back.  This should trigger the popstate event handler.
+  let popstatePromise = ContentTaskUtils.waitForEvent(this, "popstate", true);
+  content.history.back();
 
-  await deferred.promise;
+  let event = await popstatePromise;
+  ok(event.state, "Event should have a state property.");
+
+  is(content.testState, "foo",
+     "testState after going back");
+  is(JSON.stringify(content.history.state), JSON.stringify({obj1: 1}),
+     "first popstate object.");
+
+  // Add a node with id "new-elem" to the document.
+  let doc = content.document;
+  ok(!doc.getElementById("new-elem"),
+     "doc shouldn't contain new-elem before we add it.");
+  let elem = doc.createElement("div");
+  elem.id = "new-elem";
+  doc.body.appendChild(elem);
+
+  popstatePromise = ContentTaskUtils.waitForEvent(this, "popstate", true);
+  content.history.forward();
+
+  event = await popstatePromise;
+
+  // When content fires a PopStateEvent and we observe it from a chrome event
+  // listener (as we do here, and, thankfully, nowhere else in the tree), the
+  // state object will be a cross-compartment wrapper to an object that was
+  // deserialized in the content scope. And in this case, since RegExps are
+  // not currently Xrayable (see bug 1014991), trying to pull |obj3| (a RegExp)
+  // off of an Xrayed Object won't work. So we need to waive.
+  Assert.equal(Cu.waiveXrays(event.state).obj3.toString(),
+               "/^a$/", "second popstate object.");
+
+  // Make sure that the new-elem node is present in the document.  If it's
+  // not, then this history entry has a different doc identifier than the
+  // previous entry, which is bad.
+  let newElem = doc.getElementById("new-elem");
+  ok(newElem, "doc should contain new-elem.");
+  newElem.remove();
+  ok(!doc.getElementById("new-elem"), "new-elem should be removed.");
 };
 
 add_task(async function test() {
@@ -115,6 +96,6 @@ add_task(async function test() {
 
     // Run checkState() once the tab finishes loading its restored state.
     await tabRestoredPromise;
-    await checkState(browser);
+    await ContentTask.spawn(browser, null, checkState);
   });
 });
