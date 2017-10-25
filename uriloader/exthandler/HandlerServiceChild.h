@@ -3,6 +3,9 @@
 
 #include "mozilla/dom/PHandlerServiceChild.h"
 
+namespace mozilla {
+namespace dom {
+
 class HandlerServiceChild final : public mozilla::dom::PHandlerServiceChild
 {
  public:
@@ -11,5 +14,8 @@ class HandlerServiceChild final : public mozilla::dom::PHandlerServiceChild
  private:
   virtual ~HandlerServiceChild() {}
 };
+
+} // namespace dom
+} // namespace mozilla
 
 #endif
