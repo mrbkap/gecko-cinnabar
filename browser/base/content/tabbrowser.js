@@ -254,6 +254,42 @@ window._gBrowser = {
     this.tabMinWidth = this.tabMinWidthPref;
 
     this._setupEventListeners();
+
+    // Add listeners for keeping HasSiblings in sync
+    this.tabContainer.addEventListener("TabOpen", (function(aEvent) {
+      // The new tab is already in the tabs array
+      if (this.tabs.length == 2) {
+        // Tell the original tab it now has siblings
+        for (let tab of this.tabs) {
+          if (tab !== aEvent.originalTarget) {
+            tab.linkedBrowser
+               .messageManager
+               .sendAsyncMessage("Browser:HasSiblings", true);
+            return;
+          }
+        }
+      }
+    }).bind(this));
+
+    this.tabContainer.addEventListener("TabClose", (function() {
+      // Tell the lone tab it now has no siblings
+      let newCount = this.tabs.length - 1;
+      if (newCount == 1) {
+        window.messageManager
+              .broadcastAsyncMessage("Browser:HasSiblings", false);
+      }
+    }).bind(this));
+
+    this.tabContainer.addEventListener("TabRemotenessChange", (function(aEvent) {
+      // A new TabChild defaults to HasSiblings=true, so we only
+      // need to send an update if we have no siblings.
+      if (this.tabs.length == 1) {
+        let tab = aEvent.originalTarget;
+        tab.linkedBrowser
+           .messageManager
+           .sendAsyncMessage("Browser:HasSiblings", false);
+      }
+    }).bind(this));
   },
 
   get tabContextMenu() {

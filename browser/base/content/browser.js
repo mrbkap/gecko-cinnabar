@@ -1412,6 +1412,14 @@ var gBrowserInit = {
 
     this._cancelDelayedStartup();
 
+    let initialBrowser = gBrowser.initialBrowser;
+    let initialTab = gBrowser.getTabForBrowser(initialBrowser);
+    if (initialTab) {
+      initialTab.linkedBrowser
+                .messageManager
+                .sendAsyncMessage("Browser:HasSiblings", false);
+    }
+
     // We need to set the OfflineApps message listeners up before we
     // load homepages, which might need them.
     OfflineApps.init();
