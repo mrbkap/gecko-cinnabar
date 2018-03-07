@@ -413,7 +413,7 @@ TabChild::TabChild(nsIContentChild* aManager,
   , mHasValidInnerSize(false)
   , mDestroyed(false)
   , mUniqueId(aTabId)
-  , mHasSiblings(true)
+  , mHasSiblings(false)
   , mIsTransparent(false)
   , mIPCOpen(false)
   , mParentIsActive(false)
@@ -3464,6 +3464,25 @@ mozilla::dom::TabGroup*
 TabChild::TabGroup()
 {
   return mTabGroup;
+}
+
+nsresult
+TabChild::GetHasSiblings(bool* aHasSiblings)
+{
+  printf("TabChild::GetHasSiblings() returning %s\n",
+    mHasSiblings? "true" : "false");
+  *aHasSiblings = mHasSiblings;
+  return NS_OK;
+}
+
+nsresult
+TabChild::SetHasSiblings(bool aHasSiblings)
+{
+  printf("TabChild::SetHasSiblings() settings %s to %s\n",
+    mHasSiblings? "true" : "false",
+    aHasSiblings? "true" : "false");
+  mHasSiblings = aHasSiblings;
+  return NS_OK;
 }
 
 TabChildGlobal::TabChildGlobal(TabChild* aTabChild)

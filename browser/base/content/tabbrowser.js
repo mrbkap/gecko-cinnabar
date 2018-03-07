@@ -256,21 +256,6 @@ window._gBrowser = {
     this._setupEventListeners();
 
     // Add listeners for keeping HasSiblings in sync
-    this.tabContainer.addEventListener("TabOpen", (function(aEvent) {
-      // The new tab is already in the tabs array
-      if (this.tabs.length == 2) {
-        // Tell the original tab it now has siblings
-        for (let tab of this.tabs) {
-          if (tab !== aEvent.originalTarget) {
-            tab.linkedBrowser
-               .messageManager
-               .sendAsyncMessage("Browser:HasSiblings", true);
-            return;
-          }
-        }
-      }
-    }).bind(this));
-
     this.tabContainer.addEventListener("TabClose", (function() {
       // Tell the lone tab it now has no siblings
       let newCount = this.tabs.length - 1;
@@ -1750,6 +1735,10 @@ window._gBrowser = {
     evt.initEvent("TabRemotenessChange", true, false);
     tab.dispatchEvent(evt);
 
+    tab.linkedBrowser
+       .messageManager
+       .sendAsyncMessage("Browser:HasSiblings", this.tabs.length > 1);
+
     return true;
   },
 
@@ -2435,6 +2424,27 @@ window._gBrowser = {
         notificationbox.remove();
       }
       throw e;
+    }
+
+    // Update TabChild hasSiblings properties
+    if (!aCreateLazyBrowser) {
+      // If we transitioned from one tab to two tabs, we need to set
+      // hasSiblings=false on both the existing tab and the new tab.
+      // Tell the original tab it now has siblings
+      if (this.tabs.length == 2) {
+        // Don't assume any ordering of the tabs array.
+        for (let tab of this.tabs) {
+          if (tab !== t) {
+            tab.linkedBrowser
+               .messageManager
+               .sendAsyncMessage("Browser:HasSiblings", true);
+          }
+        }
+      }
+
+      t.linkedBrowser
+       .messageManager
+       .sendAsyncMessage("Browser:HasSiblings", this.tabs.length > 1);
     }
 
     // Hack to ensure that the about:newtab favicon is loaded

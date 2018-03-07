@@ -926,6 +926,7 @@ ContentChild::ProvideWindowCommon(TabChild* aTabOpener,
     CompositorOptions compositorOptions = info.compositorOptions();
     uint32_t maxTouchPoints = info.maxTouchPoints();
     DimensionInfo dimensionInfo = info.dimensions();
+    bool hasSiblings = info.hasSiblings();
 
     // Once this function exits, we should try to exit the nested event loop.
     ready = true;
@@ -968,6 +969,7 @@ ContentChild::ProvideWindowCommon(TabChild* aTabOpener,
     }
 
     newChild->SetMaxTouchPoints(maxTouchPoints);
+    newChild->SetHasSiblings(hasSiblings);
 
     // Set the opener window for this window before we start loading the document
     // inside of it. We have to do this before loading the remote scripts, because

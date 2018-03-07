@@ -122,6 +122,7 @@ struct CreatedWindowInfo
   CompositorOptions compositorOptions;
   uint32_t maxTouchPoints;
   DimensionInfo dimensions;
+  bool hasSiblings;
 };
 
 } // namespace dom
