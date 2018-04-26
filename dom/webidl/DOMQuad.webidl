@@ -20,4 +20,6 @@ interface DOMQuad {
     [SameObject] readonly attribute DOMPoint p3;
     [SameObject] readonly attribute DOMPoint p4;
     [SameObject] readonly attribute DOMRectReadOnly bounds;
+
+    jsonifier;
 };

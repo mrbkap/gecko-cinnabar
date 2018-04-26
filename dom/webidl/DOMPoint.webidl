@@ -20,6 +20,8 @@ interface DOMPointReadOnly {
     readonly attribute unrestricted double y;
     readonly attribute unrestricted double z;
     readonly attribute unrestricted double w; 
+
+    jsonifier;
 };
 
 [Pref="layout.css.DOMPoint.enabled",
@@ -32,6 +34,8 @@ interface DOMPoint : DOMPointReadOnly {
     inherit attribute unrestricted double y;
     inherit attribute unrestricted double z;
     inherit attribute unrestricted double w;
+
+    jsonifier;
 };
 
 dictionary DOMPointInit {

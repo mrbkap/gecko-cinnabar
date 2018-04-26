@@ -80,36 +80,23 @@ public:
   explicit QuadBounds(DOMQuad* aQuad)
     : DOMRectReadOnly(aQuad->GetParentObject())
     , mQuad(aQuad)
-  {}
+  {
+    double x1, x2;
+    double y1, y2;
+
+    GetHorizontalMinMax(&x1, &x2);
+    GetVerticalMinMax(&y1, &y2);
+
+    mX = x1;
+    mY = y1;
+    mWidth = x2 - x1;
+    mHeight = y2 - y1;
+  }
 
   NS_DECL_CYCLE_COLLECTION_CLASS_INHERITED(QuadBounds, DOMRectReadOnly)
   NS_DECL_ISUPPORTS_INHERITED
 
-  virtual double X() const override
-  {
-    double x1, x2;
-    GetHorizontalMinMax(&x1, &x2);
-    return x1;
-  }
-  virtual double Y() const override
-  {
-    double y1, y2;
-    GetVerticalMinMax(&y1, &y2);
-    return y1;
-  }
-  virtual double Width() const override
-  {
-    double x1, x2;
-    GetHorizontalMinMax(&x1, &x2);
-    return x2 - x1;
-  }
-  virtual double Height() const override
-  {
-    double y1, y2;
-    GetVerticalMinMax(&y1, &y2);
-    return y2 - y1;
-  }
-
+protected:
   void GetHorizontalMinMax(double* aX1, double* aX2) const
   {
     double x1, x2;
@@ -136,7 +123,6 @@ public:
     *aY2 = y2;
   }
 
-protected:
   virtual ~QuadBounds() {}
 
   RefPtr<DOMQuad> mQuad;
