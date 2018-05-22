@@ -81,16 +81,31 @@ public:
     : DOMRectReadOnly(aQuad->GetParentObject())
     , mQuad(aQuad)
   {
+  }
+
+  double X() const override
+  {
     double x1, x2;
-    double y1, y2;
-
     GetHorizontalMinMax(&x1, &x2);
+    return x1;
+  }
+  double Y() const override
+  {
+    double y1, y2;
     GetVerticalMinMax(&y1, &y2);
-
-    mX = x1;
-    mY = y1;
-    mWidth = x2 - x1;
-    mHeight = y2 - y1;
+    return y1;
+  }
+  double Width() const override
+  {
+    double x1, x2;
+    GetHorizontalMinMax(&x1, &x2);
+    return x2 - x1;
+  }
+  double Height() const override
+  {
+    double y1, y2;
+    GetVerticalMinMax(&y1, &y2);
+    return y2 - y1;
   }
 
   NS_DECL_CYCLE_COLLECTION_CLASS_INHERITED(QuadBounds, DOMRectReadOnly)

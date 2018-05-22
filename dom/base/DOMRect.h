@@ -53,19 +53,19 @@ public:
   Constructor(const GlobalObject& aGlobal, double aX, double aY,
               double aWidth, double aHeight, ErrorResult& aRV);
 
-  double X() const
+  virtual double X() const
   {
     return mX;
   }
-  double Y() const
+  virtual double Y() const
   {
     return mY;
   }
-  double Width() const
+  virtual double Width() const
   {
     return mWidth;
   }
-  double Height() const
+  virtual double Height() const
   {
     return mHeight;
   }
