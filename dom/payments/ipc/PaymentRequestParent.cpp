@@ -32,8 +32,6 @@ PaymentRequestParent::RecvRequestPayment(const IPCPaymentActionRequest& aRequest
     return IPC_FAIL_NO_REASON(this);
   }
   nsCOMPtr<nsIPaymentActionRequest> action;
-  nsCOMPtr<nsIPaymentActionCallback> callback = do_QueryInterface(this);
-  MOZ_ASSERT(callback);
   nsresult rv;
   switch (aRequest.type()) {
     case IPCPaymentActionRequest::TIPCPaymentCreateActionRequest: {
@@ -71,19 +69,18 @@ PaymentRequestParent::RecvRequestPayment(const IPCPaymentActionRequest& aRequest
         return IPC_FAIL_NO_REASON(this);
       }
       rv = createAction->InitRequest(request.requestId(),
-                                     callback,
+                                     this,
                                      mTabId,
                                      request.topLevelPrincipal(),
                                      methodData,
                                      details,
                                      options,
-				     request.shippingOption());
+                                     request.shippingOption());
       if (NS_WARN_IF(NS_FAILED(rv))) {
         return IPC_FAIL_NO_REASON(this);
       }
 
-      action = do_QueryInterface(createAction);
-      MOZ_ASSERT(action);
+      action = createAction.forget();
       break;
     }
     case IPCPaymentActionRequest::TIPCPaymentCanMakeActionRequest: {
@@ -121,13 +118,12 @@ PaymentRequestParent::RecvRequestPayment(const IPCPaymentActionRequest& aRequest
       nsCOMPtr<nsIPaymentCompleteActionRequest> completeAction =
         do_CreateInstance(NS_PAYMENT_COMPLETE_ACTION_REQUEST_CONTRACT_ID);
       rv = completeAction->InitRequest(request.requestId(),
-                                       callback,
+                                       this,
                                        request.completeStatus());
       if (NS_WARN_IF(NS_FAILED(rv))) {
         return IPC_FAIL_NO_REASON(this);
       }
-      action = do_QueryInterface(completeAction);
-      MOZ_ASSERT(action);
+      action = completeAction.forget();
       break;
     }
     case IPCPaymentActionRequest::TIPCPaymentUpdateActionRequest: {
@@ -142,11 +138,10 @@ PaymentRequestParent::RecvRequestPayment(const IPCPaymentActionRequest& aRequest
       nsCOMPtr<nsIPaymentUpdateActionRequest> updateAction =
         do_CreateInstance(NS_PAYMENT_UPDATE_ACTION_REQUEST_CONTRACT_ID);
       rv = updateAction->InitRequest(request.requestId(),
-                                     callback,
+                                     this,
                                      details,
-				     request.shippingOption());
-      action = do_QueryInterface(updateAction);
-      MOZ_ASSERT(action);
+                                     request.shippingOption());
+      action = updateAction.forget();
       break;
     }
     default: {
@@ -167,8 +162,7 @@ NS_IMETHODIMP
 PaymentRequestParent::RespondPayment(nsIPaymentActionResponse* aResponse)
 {
   if (!NS_IsMainThread()) {
-    nsCOMPtr<nsIPaymentActionCallback> self = do_QueryInterface(this);
-    MOZ_ASSERT(self);
+    nsCOMPtr<nsIPaymentActionCallback> self = this;
     nsCOMPtr<nsIPaymentActionResponse> response = aResponse;
     nsCOMPtr<nsIRunnable> r = NS_NewRunnableFunction("PaymentRequestParent::RespondPayment",
                                                      [self, response] ()
@@ -387,9 +381,7 @@ PaymentRequestParent::ActorDestroy(ActorDestroyReason aWhy)
   nsCOMPtr<nsIPaymentRequestService> service =
     do_GetService(NS_PAYMENT_REQUEST_SERVICE_CONTRACT_ID);
   MOZ_ASSERT(service);
-  nsCOMPtr<nsIPaymentActionCallback> callback = do_QueryInterface(this);
-  MOZ_ASSERT(callback);
-  nsresult rv = service->RemoveActionCallback(callback);
+  nsresult rv = service->RemoveActionCallback(this);
   if (NS_WARN_IF(NS_FAILED(rv))) {
     MOZ_ASSERT(false);
   }
@@ -404,9 +396,7 @@ PaymentRequestParent::CreateActionRequest(const nsAString& aRequestId,
   nsCOMPtr<nsIPaymentActionRequest> action =
     do_CreateInstance(NS_PAYMENT_ACTION_REQUEST_CONTRACT_ID);
   MOZ_ASSERT(action);
-  nsCOMPtr<nsIPaymentActionCallback> callback = do_QueryInterface(this);
-  MOZ_ASSERT(callback);
-  nsresult rv = action->Init(aRequestId, aActionType, callback);
+  nsresult rv = action->Init(aRequestId, aActionType, this);
   if (NS_WARN_IF(NS_FAILED(rv))) {
     return rv;
   }
